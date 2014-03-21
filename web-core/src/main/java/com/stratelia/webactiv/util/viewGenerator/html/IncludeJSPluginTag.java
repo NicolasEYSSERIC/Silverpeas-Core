@@ -118,6 +118,9 @@ public class IncludeJSPluginTag extends SimpleTagSupport {
         case lightslideshow:
           includeLightweightSlideshow(xhtml);
           break;
+        case ticker:
+          includeTicker(xhtml);
+          break;
       }
     } catch (IllegalArgumentException ex) {
       //ignore

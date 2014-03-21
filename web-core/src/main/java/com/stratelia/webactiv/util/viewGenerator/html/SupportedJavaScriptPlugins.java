@@ -130,5 +130,9 @@ public enum SupportedJavaScriptPlugins {
   /**
    * Lightweight slideshow. Easy to use but not only a few features.
    */
-  lightslideshow
+  lightslideshow,
+  /**
+   * Ticker to display short text item one by one
+   */
+  ticker
 }
