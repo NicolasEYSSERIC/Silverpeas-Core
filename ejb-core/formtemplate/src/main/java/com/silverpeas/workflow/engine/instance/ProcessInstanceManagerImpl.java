@@ -439,10 +439,12 @@ public class ProcessInstanceManagerImpl implements UpdatableProcessInstanceManag
     SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
         "root.MSG_GEN_PARAM_VALUE", "Delete history steps");
     HistoryStep[] steps = instance.getHistorySteps();
-    for (int i = 0; steps != null && i < steps.length; i++) {
-      if (!steps[i].getAction().equals("#question#")
-          && !steps[i].getAction().equals("#response#")) {
-        steps[i].deleteActionRecord();
+    if (steps != null) {
+      for (HistoryStep step : steps) {
+        if (!step.getAction().equals("#question#") && !step.getAction().equals("#response#") &&
+            !step.getAction().equals("#reAssign#")) {
+          step.deleteActionRecord();
+        }
       }
     }
 
