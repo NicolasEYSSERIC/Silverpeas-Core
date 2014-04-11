@@ -66,7 +66,7 @@ public class ProcessInstanceManagerImpl implements UpdatableProcessInstanceManag
   @Override
   public ProcessInstance[] getProcessInstances(String peasId, User user, String role,
       String[] userRoles, String[] userGroupIds) throws WorkflowException {
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.getProcessInstances()",
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.getProcessInstances()",
         "root.MSG_GEN_ENTER_METHOD", "peasId = " + peasId + ", user = " + user.getUserId()
         + ", role = " + role);
     Connection con = null;
@@ -131,7 +131,7 @@ public class ProcessInstanceManagerImpl implements UpdatableProcessInstanceManag
         selectQuery.append(")");
         selectQuery.append("order by I.instanceId desc");
 
-        SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.getProcessInstances()",
+        SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.getProcessInstances()",
             "root.MSG_GEN_PARAM_VALUE", "SQL query = " + selectQuery.toString());
 
         prepStmt = con.prepareStatement(selectQuery.toString());
@@ -368,21 +368,32 @@ public class ProcessInstanceManagerImpl implements UpdatableProcessInstanceManag
    */
   @Override
   public void removeProcessInstance(String instanceId) throws WorkflowException {
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstance()",
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstance()",
         "root.MSG_GEN_ENTER_METHOD", "InstanceId=" + instanceId);
     ProcessInstanceImpl instance;
     Database db = null;
     try {
       // Delete forms data associated with this instance
       removeProcessInstanceData(instanceId);
+      
+      SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstance()",
+          "root.MSG_GEN_PARAM_VALUE", "external data has been removed for instanceId = " + instanceId);
 
       // Constructs the query
       db = WorkflowJDOManager.getDatabase();
       db.begin();
       instance = (ProcessInstanceImpl) db.load(ProcessInstanceImpl.class,
           instanceId);
+      SilverTrace.debug("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstance()",
+          "root.MSG_GEN_PARAM_VALUE", "instance loaded");
+      
       db.remove(instance);
+      SilverTrace.debug("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstance()",
+          "root.MSG_GEN_PARAM_VALUE", "instance removed");
+      
       db.commit();
+      SilverTrace.debug("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstance()",
+          "root.MSG_GEN_PARAM_VALUE", "Remove commited");
     } catch (PersistenceException pe) {
       throw new WorkflowException(
           "ProcessInstanceManagerImpl.removeProcessInstance",
@@ -392,7 +403,7 @@ public class ProcessInstanceManagerImpl implements UpdatableProcessInstanceManag
     }
 
     WorkflowHub.getErrorManager().removeErrorsOfInstance(instanceId);
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstance()",
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstance()",
         "root.MSG_GEN_EXIT_METHOD");
   }
 
@@ -410,22 +421,26 @@ public class ProcessInstanceManagerImpl implements UpdatableProcessInstanceManag
 
   public void removeProcessInstanceData(ProcessInstance instance)
       throws WorkflowException {
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
         "root.MSG_GEN_ENTER_METHOD");
 
     ForeignPK foreignPK = new ForeignPK(instance.getInstanceId(), instance.getModelId());
 
-    // delete attachments
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
+    // delete all attachments of any type
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
         "root.MSG_GEN_PARAM_VALUE", "Delete attachments foreignPK = " + foreignPK);
     List<SimpleDocument> attachments = AttachmentServiceFactory.getAttachmentService()
-        .listDocumentsByForeignKey(foreignPK, null);
+        .listAllDocumentsByForeignKey(foreignPK, null);
     for (SimpleDocument attachment : attachments) {
+      SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
+          "root.MSG_GEN_PARAM_VALUE", "Attachment to delete = " + attachment.getFilename());
       AttachmentServiceFactory.getAttachmentService().deleteAttachment(attachment);
+      SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
+          "root.MSG_GEN_PARAM_VALUE", "Attachment deleted");
     }
 
     // delete folder
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
         "root.MSG_GEN_PARAM_VALUE", "Delete folder");
     try {
       RecordSet folderRecordSet = instance.getProcessModel().getFolderRecordSet();
@@ -436,7 +451,7 @@ public class ProcessInstanceManagerImpl implements UpdatableProcessInstanceManag
     }
 
     // delete history steps
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
         "root.MSG_GEN_PARAM_VALUE", "Delete history steps");
     HistoryStep[] steps = instance.getHistorySteps();
     if (steps != null) {
@@ -449,13 +464,13 @@ public class ProcessInstanceManagerImpl implements UpdatableProcessInstanceManag
     }
 
     // delete associated todos
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
         "root.MSG_GEN_PARAM_VALUE", "Delete associated todos");
     TodoBackboneAccess tbba = new TodoBackboneAccess();
     tbba.removeEntriesFromExternal("useless", foreignPK.getInstanceId(),
         foreignPK.getId() + "##%");
 
-    SilverTrace.info("worflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
+    SilverTrace.info("workflowEngine", "ProcessInstanceManagerImpl.removeProcessInstanceData()",
         "root.MSG_GEN_EXIT_METHOD");
   }
 
