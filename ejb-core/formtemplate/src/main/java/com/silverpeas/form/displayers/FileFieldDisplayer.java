@@ -39,6 +39,7 @@ import com.silverpeas.form.fieldType.FileField;
 import com.silverpeas.util.StringUtil;
 import com.stratelia.silverpeas.peasCore.URLManager;
 import com.stratelia.silverpeas.silvertrace.SilverTrace;
+import com.stratelia.webactiv.beans.admin.UserDetail;
 
 /**
  * A FileFieldDisplayer is an object which can display a link to a file (attachment) in HTML and can
@@ -110,6 +111,13 @@ public class FileFieldDisplayer extends AbstractFileFieldDisplayer {
               append("');\" class=\"view-file\" src=\"").append(webContext).append(
               "/util/icons/view.png\" alt=\"").append(Util.getString("GML.view", language)).append(
               "\" title=\"").append(Util.getString("GML.view", language)).append("\"/>");
+        }
+        if (attachment.isSharingAllowedForRolesFrom(UserDetail.getById(pageContext.getUserId()))) {
+          html.append("<img onclick=\"javascript:shareFile('")
+              .append(attachment.getOldSilverpeasId()).append("','").append(attachment.getInstanceId())
+              .append("');\" class=\"share-file\" src=\"").append(webContext).append(
+                  "/util/icons/share.png\" alt=\"").append(Util.getString("GML.share.file", language))
+              .append("\" title=\"").append(Util.getString("GML.share.file", language)).append("\"/>");
         }
       }
     } else if (!template.isHidden() && !template.isDisabled() && !template.isReadOnly()) {

@@ -23,6 +23,7 @@ package com.silverpeas.sharing.servlets;
 import com.silverpeas.sharing.control.FileSharingSessionController;
 import com.silverpeas.sharing.model.Ticket;
 import com.silverpeas.sharing.model.TicketFactory;
+import com.silverpeas.sharing.security.ShareableAttachment;
 import com.silverpeas.util.StringUtil;
 import com.stratelia.silverpeas.peasCore.ComponentContext;
 import com.stratelia.silverpeas.peasCore.MainSessionController;
@@ -31,6 +32,8 @@ import com.stratelia.silverpeas.silvertrace.SilverTrace;
 import com.stratelia.webactiv.beans.admin.AdminReference;
 import com.stratelia.webactiv.beans.admin.UserDetail;
 import com.stratelia.webactiv.util.DateUtil;
+
+import org.silverpeas.attachment.model.SimpleDocument;
 import org.silverpeas.servlet.HttpRequest;
 
 import javax.servlet.http.HttpServletRequest;
@@ -107,6 +110,9 @@ public class FileSharingRequestRouter extends ComponentRequestRouter<FileSharing
         UserDetail creator = fileSharingSC.getUserDetail();
         Ticket newTicket = TicketFactory.aTicket(Integer.parseInt(objectId), componentId, creator.
                 getId(), new Date(), new Date(), 1, type);
+        if (newTicket == null) {
+          throwHttpForbiddenError();
+        }
         // passage des paramètres
         request.setAttribute("Ticket", newTicket);
         request.setAttribute("Creator", creator.getDisplayedName());
@@ -117,6 +123,9 @@ public class FileSharingRequestRouter extends ComponentRequestRouter<FileSharing
         // récupération des paramètres venus de l'écran de saisie et création de l'objet
         // Ticket
         Ticket ticket = generateTicket(fileSharingSC, request);
+        if (ticket == null) {
+          throwHttpForbiddenError();
+        }
         String keyFile = fileSharingSC.createTicket(ticket);
         // mettre à jour l'objet ticket
         ticket.setToken(keyFile);
