@@ -48,6 +48,7 @@ public class FileRepositoryManager {
   final static String upLoadPath = GeneralPropertiesManager.getString("uploadsPath");
   final static String avatarPath = GeneralPropertiesManager.getString("avatar.path", upLoadPath
       + File.separatorChar + "avatar");
+  static final String silverpeasHome = new File(System.getenv("SILVERPEAS_HOME")).getPath();
   static String tempPath = "";
   static String domainPropertiesFolderPath;
   static String domainAuthenticationPropertiesFolderPath;
@@ -63,12 +64,16 @@ public class FileRepositoryManager {
     }
 
     StringBuilder path = new StringBuilder(512);
-    path.append(System.getenv("SILVERPEAS_HOME")).append(separatorChar).append("properties");
+    path.append(getSilverpeasHome()).append(separatorChar).append("properties");
     path.append(separatorChar).append("org").append(separatorChar).append("silverpeas").append(
         separatorChar);
 
     domainPropertiesFolderPath = path.toString() + "domains" + separatorChar;
     domainAuthenticationPropertiesFolderPath = path.toString() + "authentication" + separatorChar;
+  }
+  
+  public static String getSilverpeasHome() {
+    return silverpeasHome;
   }
 
   /**
