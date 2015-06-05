@@ -514,8 +514,10 @@
             $worker.html("<fmt:message key="readOnly"/> <%=m_MainSessionCtrl.getCurrentUserDetail().getDisplayedName()%> <fmt:message key="at"/> <%=DateUtil.getOutputDate(new Date(), language)%>");
             $worker.css({'visibility':'visible'});
             if (edit) {
-              var url = "<%=URLManager.getFullApplicationURL(request)%>/attachment/jsp/launch.jsp?documentUrl=" + eval("webDav".concat(oldId));
-              window.open(url, '_self');
+              var webDavURL = eval("webDav".concat(oldId));
+              window.location.href = webDavURL;
+              //var url = "<%=URLManager.getFullApplicationURL(request)%>/attachment/jsp/launch.jsp?documentUrl=" + ;
+              //window.open(url, '_self');
             } else if (download) {
               var url = $('#url_' + oldId).attr('href');
               window.open(url);

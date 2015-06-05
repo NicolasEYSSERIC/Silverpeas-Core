@@ -91,11 +91,13 @@ public class SimpleDocumentContextualMenu extends TagSupport {
       String favoriteLanguage = mainSessionController.getFavoriteLanguage();
       ResourceLocator messages = new ResourceLocator(
           "org.silverpeas.util.attachment.multilang.attachment", favoriteLanguage);
+      ResourceLocator settings =
+          new ResourceLocator("org.silverpeas.util.attachment.Attachment", "");
       String httpServerBase =
           URLManager.getServerURL((HttpServletRequest) pageContext.getRequest());
       pageContext.getOut().print(prepareActions(attachment, useXMLForm, useWebDAV,
           mainSessionController.getUserId(), contentLanguage, favoriteLanguage, messages,
-          httpServerBase, showMenuNotif, useContextualMenu));
+          httpServerBase, showMenuNotif, useContextualMenu, settings));
       return EVAL_BODY_INCLUDE;
     } catch (IOException ioex) {
       throw new JspException(ioex);
@@ -123,8 +125,8 @@ public class SimpleDocumentContextualMenu extends TagSupport {
 
   String prepareActions(SimpleDocument attachment, boolean useXMLForm, boolean useWebDAV,
       String userId, String contentLanguage, final String userLanguage, ResourceLocator resources,
-      String httpServerBase, boolean showMenuNotif, boolean useContextualMenu)
-      throws UnsupportedEncodingException {
+      String httpServerBase, boolean showMenuNotif, boolean useContextualMenu,
+      ResourceLocator settings) throws UnsupportedEncodingException {
     String language = I18NHelper.checkLanguage(contentLanguage);
     String attachmentId = String.valueOf(attachment.getOldSilverpeasId());
     boolean webDavOK = useWebDAV && attachment.isOpenOfficeCompatible();
@@ -188,8 +190,13 @@ public class SimpleDocumentContextualMenu extends TagSupport {
 
     builder.append("var ").append(oMenuId).append(";");
     builder.append("var webDav").append(attachmentId).append(" = \"");
-    builder.append(URLEncoder.encode(httpServerBase + attachment.getWebdavUrl(),
-        CharEncoding.UTF_8)).append("\";");
+    String webDavURL = httpServerBase + attachment.getWebdavUrl();
+    if ("customProtocol".equals(settings.getString("attachment.onlineEditing.mode"))) {
+      webDavURL = webDavURL.replaceFirst("http://", "spwebdav://");
+      webDavURL = webDavURL.replaceFirst("https://", "spwebdavs://");
+    }
+    //webDavURL = URLEncoder.encode(webDavURL, CharEncoding.UTF_8);
+    builder.append(webDavURL).append("\";");
     builder.append("YAHOO.util.Event.onContentReady(\"basicmenu").append(attachmentId).append(
         "\", function () {");
     if (useContextualMenu) {
@@ -255,9 +262,8 @@ public class SimpleDocumentContextualMenu extends TagSupport {
    * @return true if publication are always visible.
    */
   public boolean isComponentPublicationAlwaysVisible(String componentInstanceId) {
-    return StringUtil.getBooleanValue(
-        getAdminService().getComponentParameterValue(componentInstanceId,
-            "publicationAlwaysVisible"));
+    return StringUtil.getBooleanValue(getAdminService()
+            .getComponentParameterValue(componentInstanceId, "publicationAlwaysVisible"));
   }
 
   StringBuilder prepareMenuItem(StringBuilder buffer, String javascript, String label) {
