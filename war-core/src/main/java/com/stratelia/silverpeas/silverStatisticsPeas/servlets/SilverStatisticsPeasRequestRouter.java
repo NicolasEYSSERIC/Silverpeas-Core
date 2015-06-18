@@ -30,12 +30,11 @@ import com.stratelia.silverpeas.peasCore.MainSessionController;
 import com.stratelia.silverpeas.peasCore.servlets.ComponentRequestRouter;
 import com.stratelia.silverpeas.silverStatisticsPeas.control.SilverStatisticsPeasSessionController;
 import com.stratelia.silverpeas.silverStatisticsPeas.vo.AxisStatsFilter;
+import com.stratelia.silverpeas.silverStatisticsPeas.vo.ChartVO;
 import com.stratelia.silverpeas.silverStatisticsPeas.vo.CrossAxisStatsFilter;
 import com.stratelia.silverpeas.silverStatisticsPeas.vo.CrossStatisticVO;
 import com.stratelia.silverpeas.silverStatisticsPeas.vo.StatisticVO;
 import com.stratelia.silverpeas.silvertrace.SilverTrace;
-import org.jCharts.Chart;
-import org.jCharts.nonAxisChart.PieChart2D;
 import org.silverpeas.admin.user.constant.UserAccessLevel;
 import org.silverpeas.servlet.HttpRequest;
 
@@ -182,13 +181,11 @@ public class SilverStatisticsPeasRequestRouter extends
                 hostDateEnd));
 
             // graphiques
-            request.setAttribute("GraphicDistinctUser", Boolean.TRUE);
-            Chart loginChart = statsSC.getDistinctUserConnectionsChart(hostDateBegin, hostDateEnd);
-            request.getSession(true).setAttribute(ChartServlet.LOGINCHART, loginChart);
+            ChartVO loginChart = statsSC.getDistinctUserConnectionsChart(hostDateBegin, hostDateEnd);
+            request.setAttribute("DistinctUsersChart", loginChart);
 
-            Chart userChart = statsSC.getUserConnectionsChart(hostDateBegin, hostDateEnd);
-            request.getSession(true).setAttribute(ChartServlet.USERCHART,
-                userChart);
+            ChartVO userChart = statsSC.getUserConnectionsChart(hostDateBegin, hostDateEnd);
+            request.setAttribute("ConnectionsChart", userChart);
 
           } else if ("0".equals(filterType)) // filter group
           {
@@ -197,19 +194,18 @@ public class SilverStatisticsPeasRequestRouter extends
                 hostDateEnd, filterId));
 
             // graphiques
-            Chart userChart = statsSC.getUserConnectionsGroupChart(
+            ChartVO userChart = statsSC.getUserConnectionsGroupChart(
                 hostDateBegin, hostDateEnd, filterId);
-            request.getSession(true).setAttribute(ChartServlet.USERCHART,
-                userChart);
+            request.setAttribute("ConnectionsChart", userChart);
           } else if ("1".equals(filterType)) // filter user
           {
             request.setAttribute("ResultData", statsSC.getStatsConnexionAllUser(hostDateBegin,
                 hostDateEnd, filterId));
 
             // graphiques
-            Chart userChart =
+            ChartVO userChart =
                 statsSC.getUserConnectionsUserChart(hostDateBegin, hostDateEnd, filterId);
-            request.getSession(true).setAttribute(ChartServlet.USERCHART, userChart);
+            request.setAttribute("ConnectionsChart", userChart);
           }
         } else if ("1".equals(hostStatDetail))// Groups
         {
@@ -219,26 +215,25 @@ public class SilverStatisticsPeasRequestRouter extends
                 .getStatsConnexionGroupAll(hostDateBegin, hostDateEnd));
 
             String entiteId = request.getParameter("EntiteId");
-
+            ChartVO userChart = null;
             if (entiteId != null) {
               // graphiques
-              Chart userChart =
+              userChart =
                   statsSC.getUserConnectionsGroupChart(hostDateBegin, hostDateEnd, entiteId);
-              request.getSession(true).setAttribute(ChartServlet.USERCHART, userChart);
             } else {
               // graphiques
-              Chart userChart = statsSC.getUserConnectionsChart(hostDateBegin, hostDateEnd);
-              request.getSession(true).setAttribute(ChartServlet.USERCHART, userChart);
+              userChart = statsSC.getUserConnectionsChart(hostDateBegin, hostDateEnd);
             }
+            request.setAttribute("ConnectionsChart", userChart);
           } else if ("0".equals(filterType)) // filter group
           {
             request.setAttribute("ResultData", statsSC.getStatsConnexionGroupUser(hostDateBegin,
                 hostDateEnd, filterId));
 
             // graphiques
-            Chart userChart =
+            ChartVO userChart =
                 statsSC.getUserConnectionsGroupChart(hostDateBegin, hostDateEnd, filterId);
-            request.getSession(true).setAttribute(ChartServlet.USERCHART, userChart);
+            request.setAttribute("ConnectionsChart", userChart);
           }
         } else if (hostStatDetail.equals("2"))// Users
         {
@@ -249,25 +244,24 @@ public class SilverStatisticsPeasRequestRouter extends
 
             String entiteId = request.getParameter("EntiteId");
 
+            ChartVO userChart = null;
             if (entiteId != null) {
               // graphiques
-              Chart userChart =
-                  statsSC.getUserConnectionsUserChart(hostDateBegin, hostDateEnd, entiteId);
-              request.getSession(true).setAttribute(ChartServlet.USERCHART, userChart);
+              userChart = statsSC.getUserConnectionsUserChart(hostDateBegin, hostDateEnd, entiteId);
             } else {
               // graphiques
-              Chart userChart = statsSC.getUserConnectionsChart(hostDateBegin, hostDateEnd);
-              request.getSession(true).setAttribute(ChartServlet.USERCHART, userChart);
+              userChart = statsSC.getUserConnectionsChart(hostDateBegin, hostDateEnd);
             }
+            request.setAttribute("ConnectionsChart", userChart);
           } else if (filterType.equals("1")) // filter user
           {
             request.setAttribute("ResultData", statsSC.getStatsConnexionUserUser(hostDateBegin,
                 hostDateEnd, filterId));
 
             // graphiques
-            Chart userChart =
+            ChartVO userChart =
                 statsSC.getUserConnectionsUserChart(hostDateBegin, hostDateEnd, filterId);
-            request.getSession(true).setAttribute(ChartServlet.USERCHART, userChart);
+            request.setAttribute("ConnectionsChart", userChart);
           }
         }
 
@@ -366,10 +360,9 @@ public class SilverStatisticsPeasRequestRouter extends
         String hostStatDetail = statsSC.getFrequenceDetail();
 
         // graphiques
-        Chart userFqChart = statsSC.getUserConnectionsFqChart(
-            hostDateBegin, hostDateEnd, hostStatDetail);
-        request.getSession(true).setAttribute(ChartServlet.USERFQCHART, userFqChart);
-        request.setAttribute("Graphic", Boolean.TRUE);
+        ChartVO userFqChart =
+            statsSC.getUserConnectionsFqChart(hostDateBegin, hostDateEnd, hostStatDetail);
+        request.setAttribute("Chart", userFqChart);
 
         request.setAttribute("MonthBegin", statsSC.getMonth(statsSC.getMonthBegin()));
         request.setAttribute("YearBegin", statsSC.getYearConnection(statsSC.getYearBegin()));
@@ -412,11 +405,10 @@ public class SilverStatisticsPeasRequestRouter extends
         String spaceId = statsSC.getAccessSpaceId();
 
         // compute result
-        PieChart2D pieChart = statsSC.getUserVentilChart(
-            getRequestDate(hostYearBegin, hostMonthBegin), filterIdGroup,
-            filterIdUser, spaceId);
-        request.getSession(true).setAttribute(ChartServlet.USERVENTILCHART,
-            pieChart);
+        ChartVO chart = statsSC
+            .getUserVentilChart(getRequestDate(hostYearBegin, hostMonthBegin), filterIdGroup,
+                filterIdUser, spaceId);
+        request.setAttribute("Chart", chart);
         request.setAttribute("StatsData", statsSC.getCurrentStats());
 
         // restore request param
@@ -467,11 +459,10 @@ public class SilverStatisticsPeasRequestRouter extends
         String filterIdUser = statsSC.getAccessFilterIdUser();
 
         // compute result
-        Chart lineChart =
+        ChartVO lineChart =
             statsSC.getEvolutionUserChart(entite, entiteId, filterLibGroup, filterIdGroup,
             filterLibUser, filterIdUser);
-        request.getSession(true).setAttribute(ChartServlet.EVOLUTIONUSERCHART, lineChart);
-        request.setAttribute("StatsData", statsSC.getCurrentStats());
+        request.setAttribute("Chart", lineChart);
 
         // restore request param
         request.setAttribute("Entite", entite);
@@ -484,9 +475,8 @@ public class SilverStatisticsPeasRequestRouter extends
           return getDestination("ViewVolumePublication", statsSC, request);
         }
 
-        PieChart2D pieChart = statsSC.getVolumeServicesChart();
-        request.getSession(true).setAttribute(ChartServlet.KMINSTANCESCHART, pieChart);
-        request.setAttribute("StatsData", statsSC.getCurrentStats());
+        ChartVO pieChart = statsSC.getVolumeServicesChart();
+        request.setAttribute("Chart", pieChart);
 
         destination = "/silverStatisticsPeas/jsp/viewVolumeServices.jsp";
       } else if (function.startsWith("ViewVolumePublication")) {
@@ -521,10 +511,10 @@ public class SilverStatisticsPeasRequestRouter extends
         String spaceId = statsSC.getAccessSpaceId();
 
         // compute result
-        PieChart2D pieChart =
+        ChartVO pieChart =
             statsSC.getPubliVentilChart(getRequestDate(hostYearBegin, hostMonthBegin),
             filterIdGroup, filterIdUser, spaceId);
-        request.getSession(true).setAttribute(ChartServlet.PUBLIVENTILCHART, pieChart);
+        request.setAttribute("Chart", pieChart);
         request.setAttribute("StatsData", statsSC.getCurrentStats());
 
         // restore request param
@@ -567,8 +557,8 @@ public class SilverStatisticsPeasRequestRouter extends
         String spaceId = statsSC.getAccessSpaceId();
 
         // compute result
-        PieChart2D pieChart = statsSC.getDocsVentilChart(spaceId);
-        request.getSession(true).setAttribute(ChartServlet.DOCVENTILCHART, pieChart);
+        ChartVO pieChart = statsSC.getDocsVentilChart(spaceId);
+        request.setAttribute("Chart", pieChart);
         request.setAttribute("StatsData", statsSC.getCurrentStats());
         request.setAttribute("SpaceId", statsSC.getAccessSpaceId());
         request.setAttribute("Path", statsSC.getPath());
@@ -579,8 +569,8 @@ public class SilverStatisticsPeasRequestRouter extends
         String spaceId = statsSC.getAccessSpaceId();
 
         // compute result
-        PieChart2D pieChart = statsSC.getDocsSizeVentilChart(spaceId);
-        request.getSession(true).setAttribute(ChartServlet.DOCSIZEVENTILCHART, pieChart);
+        ChartVO pieChart = statsSC.getDocsSizeVentilChart(spaceId);
+        request.setAttribute("Chart", pieChart);
         request.setAttribute("StatsData", statsSC.getCurrentStats());
         request.setAttribute("SpaceId", statsSC.getAccessSpaceId());
         request.setAttribute("Path", statsSC.getPath());
@@ -588,8 +578,8 @@ public class SilverStatisticsPeasRequestRouter extends
         destination = "/silverStatisticsPeas/jsp/viewVolumeSizeServer.jsp";
       } else if (function.startsWith("ViewEvolutionVolumeSizeServer")) {
         // compute result
-        Chart lineChart = statsSC.getEvolutionDocsSizeChart();
-        request.getSession(true).setAttribute(ChartServlet.EVOLUTIONDOCSIZECHART, lineChart);
+        ChartVO lineChart = statsSC.getEvolutionDocsSizeChart();
+        request.setAttribute("Chart", lineChart);
         request.setAttribute("StatsData", statsSC.getCurrentStats());
 
         destination = "/silverStatisticsPeas/jsp/viewEvolutionVolumeSizeServer.jsp";
