@@ -185,7 +185,7 @@
                   if (spaceInst.isRoot()) {
                     pageContext.setAttribute("currentSpaceId", m_asPrivateDomainsIds[nK]);
             %>
-            <view:map spaceId="${pageScope.currentSpaceId}"/>
+            <view:map spaceId="${pageScope.currentSpaceId}" displayAppIcon="true" displayAppsFirst="true"/>
             <%
                   }
                 }
