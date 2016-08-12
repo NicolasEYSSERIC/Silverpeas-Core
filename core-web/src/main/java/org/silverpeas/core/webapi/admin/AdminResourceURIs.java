@@ -55,6 +55,7 @@ public final class AdminResourceURIs {
   public static final String GET_USED_TOOLS_PARAM = "getUsedTools";
 
   public static final String COMPONENTS_BASE_URI = "components";
+  public static final String BIN_BASE_URI = "bin";
 
   private static final char separator = '/';
 

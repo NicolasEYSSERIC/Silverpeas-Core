@@ -219,25 +219,6 @@ public class JobStartPagePeasRequestRouter extends ComponentRequestRouter<JobSta
       }
       request.setAttribute("haveToRefreshNavBar", Boolean.TRUE);
       destination = getDestination("ViewBin", jobStartPageSC, request);
-    } else if ("RemoveDefinitely".equals(function)) {
-      String itemId = request.getParameter("ItemId");
-      if (StringUtil.isDefined(itemId)) {
-        if (itemId.startsWith("WA")) {
-          jobStartPageSC.deleteSpaceInBin(itemId);
-        } else {
-          jobStartPageSC.deleteComponentInBin(itemId);
-        }
-      } else {
-        String[] spaceIds = request.getParameterValues("SpaceIds");
-        for (int i = 0; spaceIds != null && i < spaceIds.length; i++) {
-          jobStartPageSC.deleteSpaceInBin(spaceIds[i]);
-        }
-        String[] componentIds = request.getParameterValues("ComponentIds");
-        for (int i = 0; componentIds != null && i < componentIds.length; i++) {
-          jobStartPageSC.deleteComponentInBin(componentIds[i]);
-        }
-      }
-      destination = getDestinationNavBar("ViewBin", jobStartPageSC, request);
     }
 
     return destination;

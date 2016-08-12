@@ -949,16 +949,8 @@ public class JobStartPagePeasSessionController extends AbstractComponentSessionC
     m_NavBarMgr.resetAllCache();
   }
 
-  public void deleteSpaceInBin(String spaceId) {
-    adminController.deleteSpaceInstById(getUserDetail(), spaceId, true);
-  }
-
   public void restoreComponentFromBin(String componentId) {
     adminController.restoreComponentFromBasket(componentId);
-  }
-
-  public void deleteComponentInBin(String componentId) {
-    adminController.deleteComponentInst(getUserDetail(), componentId, true);
   }
 
   /**

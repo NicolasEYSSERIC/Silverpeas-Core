@@ -31,20 +31,26 @@
 <%@ include file="check.jsp" %>
 
 <%
-List removedSpaces 		= (List) request.getAttribute("Spaces");
-List removedComponents 	= (List) request.getAttribute("Components");
+List<SpaceInstLight> removedSpaces 		= (List<SpaceInstLight>) request.getAttribute("Spaces");
+List<ComponentInstLight> removedComponents 	= (List<ComponentInstLight>) request.getAttribute("Components");
 
-operationPane.addOperation(resource.getIcon("JSPP.restoreAll"),resource.getString("JSPP.BinRestore"),"javascript:onClick=restore()");
-operationPane.addOperation(resource.getIcon("JSPP.deleteAll"),resource.getString("JSPP.BinDelete"),"javascript:onClick=remove()");
+boolean emptyBin = false;
+if ((removedSpaces == null || removedSpaces.isEmpty()) && (removedComponents == null || removedComponents.isEmpty())) {
+  emptyBin = true;
+}
+
+if (!emptyBin) {
+  operationPane.addOperation(resource.getIcon("JSPP.restoreAll"),resource.getString("JSPP.BinRestore"),"javascript:onClick=restore()");
+  operationPane.addOperation(resource.getIcon("JSPP.deleteAll"),resource.getString("JSPP.BinDelete"),"javascript:onClick=remove()");
+  operationPane.addOperation(null , "Vider la corbeille", "javascript:onclick=emptyBin()");
+}
 
 browseBar.setComponentName(resource.getString("JSPP.Bin"));
-
-boolean emptyBin = true;
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<HEAD>
+<head>
 <view:looknfeel withCheckFormScript="true"/>
 <view:includePlugin name="qtip"/>
 <view:includePlugin name="popup"/>
@@ -52,14 +58,134 @@ boolean emptyBin = true;
 <!--
 function removeItem(id) {
   jQuery.popup.confirm("<%=resource.getString("JSPP.BinDeleteConfirm")%>", function() {
-    location.href = "RemoveDefinitely?ItemId=" + id;
+    var url = webContext+"/services/bin/delete?";
+    if (id.startsWith("WA")) {
+      url += "spaceIds="+id;
+    } else {
+      url += "appIds="+id;
+    }
+    $.ajax({
+      url: url,
+      type: "DELETE",
+      contentType: "application/json",
+      dataType: "json",
+      cache: false,
+      success: function(data) {
+        processResponse(data);
+      },
+      error: function(data) {
+        // do something here
+        notyError(data);
+      }
+    });
+    return true;
   });
+}
+
+function processResponse(data) {
+  //Start by process deletion without errors
+  var onceApp = (data.appIdsOK.length == 1);
+  var onceSpace = (data.spaceIdsOK.length == 1);
+  var uniqueDeletion = false;
+  if ((onceApp && !onceSpace) || (!onceApp && onceSpace)) {
+    var id;
+    if (onceApp) {
+      id = data.appIdsOK[0];
+    } else {
+      id = data.spaceIdsOK[0];
+    }
+    $("#"+id).remove();
+    uniqueDeletion = true;
+  } else {
+    data.appIdsOK.forEach(function(appId) {
+      $("#"+appId).remove();
+    });
+    data.spaceIdsOK.forEach(function(spaceId) {
+      $("#"+spaceId).remove();
+    });
+  }
+
+  //Then process errors
+  var errorLabel = "";
+  data.appIdsNOK.forEach(function(appId) {
+    errorLabel += " - "+$("#"+appId+">a").text()+"<br/>";
+  });
+  data.spaceIdsNOK.forEach(function(spaceId) {
+    errorLabel += " - "+$("#"+spaceId+">a").text()+"<br/>";
+  });
+  if (errorLabel.isDefined()) {
+    errorLabel = "Les éléments suivants n'ont pas pu être supprimés : <br/>" + errorLabel;
+    notyError(errorLabel);
+  } else if (uniqueDeletion) {
+    notySuccess("L'élément a bien été supprimé définitivement...")
+  } else {
+    notySuccess("Tous les éléments ont bien été supprimés définitivement...");
+  }
+
+  var spacesInBin = $('#binContentSpaces>tbody>tr').length > 0;
+  var appsInBin =  $('#binContentComponents>tbody>tr').length > 0;
+  /*if (!spacesInBin) {
+    $('#binContentSpaces').remove();
+  }
+  if (!appsInBin) {
+    $('#binContentComponents').remove();
+  }*/
+  if (!spacesInBin && !appsInBin) {
+    $("#binForm").remove();
+    $(".cellOperation").remove();
+    $(".inlineMessage").css("display", "block");
+  }
 }
 
 function remove() {
   jQuery.popup.confirm("<%=resource.getString("JSPP.BinDeleteConfirmSelected")%>", function() {
-    window.document.binForm.action = "RemoveDefinitely";
-    window.document.binForm.submit();
+    var url = webContext+"/services/bin/delete?";
+    var spaceIds = [];
+    $('input:checked[name=SpaceIds]').each(function() {
+      spaceIds.push($(this).val());
+    });
+    url += "spaceIds="+spaceIds;
+    var appIds = [];
+    $('input:checked[name=ComponentIds]').each(function() {
+      appIds.push($(this).val());
+    });
+    url += "&appIds="+appIds;
+    $.ajax({
+      url: url,
+      type: "DELETE",
+      contentType: "application/json",
+      dataType: "json",
+      cache: false,
+      success: function(data) {
+        processResponse(data);
+      },
+      error: function(data) {
+        // do something here
+        notyError(data);
+      }
+    });
+    return true;
+  });
+}
+
+function emptyBin() {
+  jQuery.popup.confirm("<%=resource.getString("JSPP.BinDeleteConfirmSelected")%>", function() {
+    var url = webContext+"/services/bin/empty";
+    $.ajax({
+      url: url,
+      type: "POST",
+      contentType: "application/json",
+      dataType: "json",
+      cache: false,
+      success: function(data) {
+        processResponse(data);
+      },
+      error: function(data) {
+        // do something here
+        notyError(data);
+      }
+    });
+    return true;
   });
 }
 
@@ -76,7 +202,7 @@ function jqCheckAll2(id, name)
 }
 
 $(document).ready(function() {
-  // By suppling no content attribute, the library uses each elements title attribute by default
+  // By supplying no content attribute, the library uses each elements title attribute by default
   $('.item-path').qtip({
     content : {
       text : false,
@@ -100,31 +226,34 @@ $(document).ready(function() {
 });
 -->
 </script>
-</HEAD>
-<BODY>
+  <style type="text/css">
+    <%if (!emptyBin) { %>
+      .inlineMessage {
+        display: none;
+      }
+    <% } %>
+  </style>
+</head>
+<body>
 <%
 out.println(window.printBefore());
-out.println(frame.printBefore());
 %>
-<center>
-<form name="binForm" action="" method="POST">
+<view:frame>
+<form name="binForm" id="binForm" action="" method="post">
 <%
-	ArrayPane arrayPane = gef.getArrayPane("binContentSpaces", "ViewBin", request, session);
-	arrayPane.addArrayColumn(resource.getString("GML.space"));
-	arrayPane.addArrayColumn(resource.getString("JSPP.BinRemoveDate"));
-	ArrayColumn columnOp = arrayPane.addArrayColumn("<span style=\"float:left\">"+resource.getString("GML.operation")+"</span> <input type=\"checkbox\" id=\"checkAllSpaces\" onclick=\"jqCheckAll2(this.id, 'SpaceIds')\" style=\"float:left;margin:0px;margin-left:5px;padding:0px;vertical-align:middle;background-color:none;\"/>");
-	columnOp.setSortable(false);
+  //Array of deleted spaces
+  if (removedSpaces != null && !removedSpaces.isEmpty()) {
 
-	//Array of deleted spaces
-	if (removedSpaces != null && removedSpaces.size() != 0)
-	{
-		emptyBin = false;
-		Iterator it = (Iterator) removedSpaces.iterator();
-		while (it.hasNext())
-		{
-			ArrayLine line = arrayPane.addArrayLine();
-			SpaceInstLight space = (SpaceInstLight) it.next();
-			ArrayCellText cellLabel = null;
+    ArrayPane arrayPane = gef.getArrayPane("binContentSpaces", "ViewBin", request, session);
+    arrayPane.addArrayColumn(resource.getString("GML.space"));
+    arrayPane.addArrayColumn(resource.getString("JSPP.BinRemoveDate"));
+    ArrayColumn columnOp = arrayPane.addArrayColumn("<span style=\"float:left\">"+resource.getString("GML.operation")+"</span> <input type=\"checkbox\" id=\"checkAllSpaces\" onclick=\"jqCheckAll2(this.id, 'SpaceIds')\" style=\"float:left;margin:0px;margin-left:5px;padding:0px;vertical-align:middle;background-color:none;\"/>");
+    columnOp.setSortable(false);
+
+		for (SpaceInstLight space : removedSpaces) {
+      ArrayLine line = arrayPane.addArrayLine();
+      line.setId(space.getId());
+      ArrayCellText cellLabel = null;
 			if (space.isRoot())
 				cellLabel = line.addArrayCellText(space.getName());
 			else
@@ -142,26 +271,20 @@ out.println(frame.printBefore());
 			line.addArrayCellText(restoreIcon.print()+"&nbsp;&nbsp;&nbsp;"+deleteIcon.print()+"&nbsp;&nbsp;&nbsp;<input type=\"checkbox\" name=\"SpaceIds\" value=\""+space.getId()+"\">");
 		}
 		out.println(arrayPane.print());
+    out.println("<br/>");
 	}
 
 	//Array of deleted components
-	arrayPane = gef.getArrayPane("binContentComponents", "ViewBin", request, session);
-	arrayPane.addArrayColumn(resource.getString("GML.component"));
-	arrayPane.addArrayColumn(resource.getString("JSPP.BinRemoveDate"));
-	columnOp = arrayPane.addArrayColumn("<span style=\"float:left\">"+resource.getString("GML.operation")+"</span> <input type=\"checkbox\" id=\"checkAllComponents\" onclick=\"jqCheckAll2(this.id, 'ComponentIds')\" style=\"float:left;margin:0px;margin-left:5px;padding:0px;vertical-align:middle;background-color:none;\"/>");
-	columnOp.setSortable(false);
+	if (removedComponents != null && !removedComponents.isEmpty()) {
+    ArrayPane arrayPane = gef.getArrayPane("binContentComponents", "ViewBin", request, session);
+    arrayPane.addArrayColumn(resource.getString("GML.component"));
+    arrayPane.addArrayColumn(resource.getString("JSPP.BinRemoveDate"));
+    ArrayColumn columnOp = arrayPane.addArrayColumn("<span style=\"float:left\">"+resource.getString("GML.operation")+"</span> <input type=\"checkbox\" id=\"checkAllComponents\" onclick=\"jqCheckAll2(this.id, 'ComponentIds')\" style=\"float:left;margin:0px;margin-left:5px;padding:0px;vertical-align:middle;background-color:none;\"/>");
+    columnOp.setSortable(false);
 
-	if (removedComponents != null && removedComponents.size() != 0)
-	{
-		if (!emptyBin)
-			out.println("<BR/>");
-
-		emptyBin = false;
-		Iterator it = (Iterator) removedComponents.iterator();
-		while (it.hasNext())
-		{
+    for (ComponentInstLight component : removedComponents) {
 			ArrayLine line = arrayPane.addArrayLine();
-			ComponentInstLight component = (ComponentInstLight) it.next();
+      line.setId(component.getId());
 			line.addArrayCellText("<a href=\"#\" class=\"item-path\" title=\""+component.getPath(" > ")+"\"/>"+
 					EncodeHelper.javaStringToHtmlString(component.getLabel())+"</a>");
 			ArrayCellText cell = line.addArrayCellText(resource.getOutputDateAndHour(component.getRemoveDate())+"&nbsp;("+component.getRemoverName()+")");
@@ -176,19 +299,12 @@ out.println(frame.printBefore());
 		}
 		out.println(arrayPane.print());
 	}
-
-	if (emptyBin)
-	{
-		out.println(board.printBefore());
-		out.println("<center>"+resource.getString("JSPP.BinEmpty")+"</center>");
-		out.println(board.printAfter());
-	}
 %>
 </form>
-</center>
+  <span class="inlineMessage"><%=resource.getString("JSPP.BinEmpty")%></span>
+</view:frame>
 <%
-out.println(frame.printAfter());
 out.println(window.printAfter());
 %>
-</BODY>
-</HTML>
+</body>
+</html>
