@@ -29,14 +29,11 @@
 package org.silverpeas.web.jobdomain;
 
 import org.silverpeas.core.admin.user.model.UserDetail;
-import org.silverpeas.core.util.ArrayUtil;
 import org.silverpeas.core.util.StringUtil;
 import org.silverpeas.core.admin.service.AdminController;
 import org.silverpeas.core.admin.user.model.Group;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -45,80 +42,49 @@ import java.util.List;
  * @t.leroi
  */
 public class GroupNavigationStock extends NavigationStock {
-  Group m_NavGroup = null;
-  String m_GroupId = null;
-  List<String> manageableGroupIds = null;
+  private Group navGroup = null;
+  private String groupId = null;
 
   public GroupNavigationStock(String navGroup, AdminController adc,
       List<String> manageableGroupIds) {
-    super(adc);
-    m_GroupId = navGroup;
-    this.manageableGroupIds = manageableGroupIds;
+    super(adc, manageableGroupIds);
+    groupId = navGroup;
     refresh();
   }
 
   public void refresh() {
-    String[] subUsersIds = null;
-    String[] subGroupsIds = null;
-    int i;
-
-    m_NavGroup = m_adc.getGroupById(m_GroupId);
-    subUsersIds = m_NavGroup.getUserIds();
+    navGroup = Group.getById(groupId);
+    String[] subUsersIds = navGroup.getUserIds();
     if (subUsersIds == null) {
-      m_SubUsers = new UserDetail[0];
+      subUsers = new UserDetail[0];
     } else {
-      m_SubUsers = m_adc.getUserDetails(subUsersIds);
+      subUsers = adc.getUserDetails(subUsersIds);
     }
-    JobDomainSettings.sortUsers(m_SubUsers);
+    JobDomainSettings.sortUsers(subUsers);
 
-    subGroupsIds = m_adc.getAllSubGroupIds(m_NavGroup.getId());
+    String[] subGroupsIds = adc.getAllSubGroupIds(navGroup.getId());
     if (subGroupsIds == null) {
-      m_SubGroups = new Group[0];
+      subGroups = new Group[0];
     } else {
-      if (manageableGroupIds != null)
+      if (manageableGroupIds != null) {
         subGroupsIds = filterGroupsToGroupManager(subGroupsIds);
+      }
 
-      m_SubGroups = new Group[subGroupsIds.length];
-      for (i = 0; i < subGroupsIds.length; i++) {
-        m_SubGroups[i] = m_adc.getGroupById(subGroupsIds[i]);
+      subGroups = new Group[subGroupsIds.length];
+      for (int i = 0; i < subGroupsIds.length; i++) {
+        subGroups[i] = adc.getGroupById(subGroupsIds[i]);
       }
     }
-    JobDomainSettings.sortGroups(m_SubGroups);
-    verifIndexes();
+    JobDomainSettings.sortGroups(subGroups);
   }
 
   private String[] filterGroupsToGroupManager(String[] groupIds) {
-    // get all manageable groups by current user
-    Iterator<String> itManageableGroupsIds = null;
-
     List<String> temp = new ArrayList<String>();
 
     // filter groups
-    String groupId = null;
-    for (String groupId1 : groupIds) {
-      groupId = groupId1;
-
-      if (manageableGroupIds.contains(groupId)) {
+    for (String groupId : groupIds) {
+      if (isGroupVisible(groupId)) {
         temp.add(groupId);
-      } else {
-        // get all subGroups of group
-        List<String> subGroupIds = Arrays.asList(m_adc.getAllSubGroupIdsRecursively(groupId));
-
-        // check if at least one manageable group is part of subGroupIds
-        itManageableGroupsIds = manageableGroupIds.iterator();
-
-        String manageableGroupId = null;
-        boolean find = false;
-        while (!find && itManageableGroupsIds.hasNext()) {
-          manageableGroupId = itManageableGroupsIds.next();
-          if (subGroupIds.contains(manageableGroupId)) {
-            find = true;
-          }
-        }
-
-        if (find) {
-          temp.add(groupId);
-        }
       }
     }
 
@@ -127,17 +93,17 @@ public class GroupNavigationStock extends NavigationStock {
 
   public boolean isThisGroup(String grId) {
     if (StringUtil.isDefined(grId)) {
-      return (grId.equals(m_NavGroup.getId()));
+      return grId.equals(navGroup.getId());
     } else {
-      return (isGroupValid(m_NavGroup) == false);
+      return isGroupValid(navGroup) == false;
     }
   }
 
   public Group getThisGroup() {
-    return m_NavGroup;
+    return navGroup;
   }
 
-  static public boolean isGroupValid(Group gr) {
+  public static boolean isGroupValid(Group gr) {
     return gr != null && StringUtil.isDefined(gr.getId());
   }
 }

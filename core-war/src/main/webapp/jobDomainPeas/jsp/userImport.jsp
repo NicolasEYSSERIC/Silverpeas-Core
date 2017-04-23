@@ -35,7 +35,7 @@
     String 		action 		= (String) request.getAttribute("action");
     String 		groupsPath 	= (String) request.getAttribute("groupsPath");
     Iterator 	properties	= (Iterator) request.getAttribute("properties");
-    Hashtable	query		= (Hashtable) request.getAttribute("Query");
+    Map	query		= (Map) request.getAttribute("Query");
 	List		users		= (List) request.getAttribute("Users");
 	int 		nbUsersPerPage = 15;
 

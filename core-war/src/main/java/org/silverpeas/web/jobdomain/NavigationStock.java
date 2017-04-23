@@ -35,117 +35,58 @@ import org.silverpeas.core.admin.service.AdminController;
 import org.silverpeas.core.admin.user.model.Group;
 import org.silverpeas.core.admin.user.model.UserDetail;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * This class manage the informations needed for groups navigation and browse PRE-REQUIRED : the
  * Group passed in the constructor MUST BE A VALID GROUP (with Id, etc...)
  * @t.leroi
  */
 public class NavigationStock {
-  Group[] m_SubGroups = null;
-  UserDetail[] m_SubUsers = null;
-  int m_FirstDisplayedUser = 0;
-  int m_FirstDisplayedGroup = 0;
-  AdminController m_adc = null;
+  Group[] subGroups = null;
+  UserDetail[] subUsers = null;
+  AdminController adc = null;
+  List<String> manageableGroupIds = null;
 
-  public NavigationStock(AdminController adc) {
-    m_adc = adc;
-    m_FirstDisplayedUser = 0;
-    m_FirstDisplayedGroup = 0;
-  }
-
-  protected void verifIndexes() {
-    if (m_SubUsers.length <= m_FirstDisplayedUser) {
-      if (m_SubUsers.length > 0) {
-        m_FirstDisplayedUser = m_SubUsers.length - 1;
-      } else {
-        m_FirstDisplayedUser = 0;
-      }
-    }
-    if (m_SubGroups.length <= m_FirstDisplayedGroup) {
-      if (m_SubGroups.length > 0) {
-        m_FirstDisplayedGroup = m_SubGroups.length - 1;
-      } else {
-        m_FirstDisplayedGroup = 0;
-      }
-    }
+  public NavigationStock(AdminController adc, List<String> manageableGroupIds) {
+    this.adc = adc;
+    this.manageableGroupIds = manageableGroupIds;
   }
 
   // SubUsers functions
-
-  public void nextUserPage() {
-    if ((JobDomainSettings.m_UsersByPage != -1)
-        && (m_SubUsers.length > (m_FirstDisplayedUser + JobDomainSettings.m_UsersByPage))) {
-      m_FirstDisplayedUser += JobDomainSettings.m_UsersByPage;
-    }
-  }
-
-  public void previousUserPage() {
-    if ((JobDomainSettings.m_UsersByPage != -1) && (m_FirstDisplayedUser > 0)) {
-      if (m_FirstDisplayedUser >= JobDomainSettings.m_UsersByPage) {
-        m_FirstDisplayedUser -= JobDomainSettings.m_UsersByPage;
-      } else {
-        m_FirstDisplayedUser = 0;
-      }
-    }
-  }
-
-  public boolean isFirstUserPage() {
-    if (JobDomainSettings.m_UsersByPage == -1) {
-      return true;
-    }
-    return (m_FirstDisplayedUser == 0);
-  }
-
-  public boolean isLastUserPage() {
-    if (JobDomainSettings.m_UsersByPage == -1) {
-      return true;
-    }
-    return (m_SubUsers.length <= (m_FirstDisplayedUser + JobDomainSettings.m_UsersByPage));
-  }
-
   public UserDetail[] getAllUserPage() {
-    return m_SubUsers;
+    return subUsers;
   }
 
   public UserDetail[] getUserPage() {
-    return m_SubUsers;
+    return subUsers;
   }
 
   // SubGroups functions
-
-  public void nextGroupPage() {
-    if ((JobDomainSettings.m_GroupsByPage != -1)
-        && (m_SubGroups.length > (m_FirstDisplayedGroup + JobDomainSettings.m_GroupsByPage))) {
-      m_FirstDisplayedGroup += JobDomainSettings.m_GroupsByPage;
-    }
-  }
-
-  public void previousGroupPage() {
-    if ((JobDomainSettings.m_GroupsByPage != -1) && (m_FirstDisplayedGroup > 0)) {
-      if (m_FirstDisplayedGroup >= JobDomainSettings.m_GroupsByPage) {
-        m_FirstDisplayedGroup -= JobDomainSettings.m_GroupsByPage;
-      } else {
-        m_FirstDisplayedGroup = 0;
-      }
-    }
-  }
-
-  public boolean isFirstGroupPage() {
-    return (m_FirstDisplayedGroup == 0);
-  }
-
-  public boolean isLastGroupPage() {
-    if (JobDomainSettings.m_GroupsByPage == -1) {
-      return true;
-    }
-    return (m_SubGroups.length <= (m_FirstDisplayedGroup + JobDomainSettings.m_GroupsByPage));
-  }
-
   public Group[] getAllGroupPage() {
-    return m_SubGroups;
+    return subGroups;
   }
 
   public Group[] getGroupPage() {
-    return m_SubGroups;
+    return subGroups;
+  }
+
+  protected boolean isGroupVisible(String groupId) {
+    if (manageableGroupIds.contains(groupId)) {
+      return true;
+    } else {
+      // get all subGroups of group
+      List<String> subGroupIds = Arrays.asList(adc
+          .getAllSubGroupIdsRecursively(groupId));
+
+      // check if at least one manageable group is part of subGroupIds
+      for (String manageableGroupId : manageableGroupIds) {
+        if (subGroupIds.contains(manageableGroupId)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

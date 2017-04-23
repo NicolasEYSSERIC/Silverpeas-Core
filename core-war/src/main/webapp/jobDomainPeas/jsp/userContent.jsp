@@ -43,6 +43,7 @@
 
 <c:set var="userInfos" value="${requestScope.userObject}" />
 <jsp:useBean id="userInfos" type="org.silverpeas.core.admin.user.model.UserFull"/>
+<c:set var="listIndex" value="${requestScope.Index}" />
 
 <c:set var="lastName" value="${userInfos.lastName}" />
 <c:set var="displayedLastName"><view:encodeHtml string="${lastName}" /></c:set>
@@ -153,12 +154,20 @@
       });
     }
   </script>
+  <style type="text/css">
+    #pagination {
+      float: right;
+      width: 100%;
+      text-align: right;
+    }
+  </style>
 </head>
 <body>
 <%
 out.println(window.printBefore());
 %>
 <view:frame>
+  <viewTags:displayIndex nbItems="${listIndex.nbItems}" index="${listIndex.currentIndex}" linkSuffix="User"/>
 <fieldset id="identity-main" class="skinFieldset">
   <legend><fmt:message key="myProfile.identity.fieldset.main" bundle="${profile}" /></legend>
   <ul class="fields">
@@ -230,11 +239,18 @@ out.println(window.printBefore());
     <!--User Language-->
     <li class="field" id="form-row-user-language">
       <label class="txtlibform"><fmt:message key="JDP.userPreferredLanguage"/></label>
-
       <div class="champs">
         <viewTags:userPreferredLanguageSelector user="${userInfos}" readOnly="true"/>
       </div>
     </li>
+    <c:if test="${not empty userInfos.creationDate}">
+    <li class="field" id="form-row-user-creationDate">
+      <label class="txtlibform"><fmt:message key="GML.creationDate"/></label>
+      <div class="champs">
+        <view:formatDateTime value="${userInfos.creationDate}"/>
+      </div>
+    </li>
+    </c:if>
     <li class="field" id="form-row-user-lastConnection">
       <label class="txtlibform"><fmt:message key="GML.user.lastConnection"/></label>
       <div class="champs">

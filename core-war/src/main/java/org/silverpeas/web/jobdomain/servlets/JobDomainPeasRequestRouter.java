@@ -39,7 +39,6 @@ import org.silverpeas.core.util.ResourceLocator;
 import org.silverpeas.core.util.ServiceProvider;
 import org.silverpeas.core.util.SettingBundle;
 import org.silverpeas.core.util.StringUtil;
-import org.silverpeas.core.util.WebEncodeHelper;
 import org.silverpeas.core.util.file.FileUploadUtil;
 import org.silverpeas.core.util.logging.Level;
 import org.silverpeas.core.web.http.HttpRequest;
@@ -60,6 +59,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -111,7 +111,6 @@ public class JobDomainPeasRequestRouter extends
       HttpRequest request) {
     String destination = "";
 
-
     try {
       if (!jobDomainSC.isAccessGranted()) {
         throw new JobDomainPeasException("Bad right for user {0}", jobDomainSC.getUserId());
@@ -139,15 +138,22 @@ public class JobDomainPeasRequestRouter extends
         jobDomainSC.returnIntoGroup(null);
         jobDomainSC.setDefaultTargetDomain();
         destination = "jobDomain.jsp";
-      } // USER Actions --------------------------------------------
-      else if (function.startsWith("user")) {
+      } else if ("PreviousUser".equals(function)) {
+        UserDetail user = jobDomainSC.getPrevious();
+        jobDomainSC.setTargetUser(user.getId());
+        destination = "userContent.jsp";
+      } else if ("NextUser".equals(function)) {
+        UserDetail user = jobDomainSC.getNext();
+        jobDomainSC.setTargetUser(user.getId());
+        destination = "userContent.jsp";
+      } else if (function.startsWith("user")) {
+        // USER Actions --------------------------------------------
+        String userId = request.getParameter("Iduser");
         if (function.startsWith("userContent")) {
-          if ((request.getParameter("Iduser") != null)
-              && (request.getParameter("Iduser").length() > 0)) {
-            jobDomainSC.setTargetUser(request.getParameter("Iduser"));
+          if (StringUtil.isDefined(userId)) {
+            jobDomainSC.setTargetUser(userId);
           }
         } else if (function.equals("userGetP12")) {
-          String userId = request.getParameter("Iduser");
           jobDomainSC.getP12(userId);
         } else if (function.startsWith("userCreate")) {
           UserRequestData userRequestData =
@@ -157,7 +163,6 @@ public class JobDomainPeasRequestRouter extends
           HashMap<String, String> properties = getExtraPropertyValues(request);
 
           jobDomainSC.createUser(userRequestData, properties, request);
-
         } else if (function.startsWith("usersCsvImport")) {
           List<FileItem> fileItems = request.getFileItems();
           UserRequestData userRequestData =
@@ -179,15 +184,15 @@ public class JobDomainPeasRequestRouter extends
 
           jobDomainSC.modifyUser(userRequestData, properties, request);
         } else if (function.startsWith("userBlock")) {
-          jobDomainSC.blockUser(request.getParameter("Iduser"));
+          jobDomainSC.blockUser(userId);
         } else if (function.startsWith("userUnblock")) {
-          jobDomainSC.unblockUser(request.getParameter("Iduser"));
+          jobDomainSC.unblockUser(userId);
         } else if (function.startsWith("userDeactivate")) {
-          jobDomainSC.deactivateUser(request.getParameter("Iduser"));
+          jobDomainSC.deactivateUser(userId);
         } else if (function.startsWith("userActivate")) {
-          jobDomainSC.activateUser(request.getParameter("Iduser"));
+          jobDomainSC.activateUser(userId);
         } else if (function.startsWith("userDelete")) {
-          jobDomainSC.deleteUser(request.getParameter("Iduser"));
+          jobDomainSC.deleteUser(userId);
         } else if (function.startsWith("userMS")) {
           UserRequestData userRequestData =
               RequestParameterDecoder.decode(request, UserRequestData.class);
@@ -202,7 +207,7 @@ public class JobDomainPeasRequestRouter extends
             jobDomainSC.modifyUserFull(userRequestData, properties);
           }
         } else if (function.startsWith("userSearchToImport")) {
-          Hashtable<String, String> query;
+          Map<String, String> query;
           List<UserDetail> users;
           jobDomainSC.clearListSelectedUsers();
           jobDomainSC.setIndexOfFirstItemToDisplay("0");
@@ -242,17 +247,16 @@ public class JobDomainPeasRequestRouter extends
             specificIds = new String[jobDomainSC.getListSelectedUsers().size()];
             jobDomainSC.getListSelectedUsers().toArray(specificIds);
             jobDomainSC.importUsers(specificIds);
-          } // Unitary user Import
-          else {
+          } else {
+            // Unitary user Import
             String specificId = request.getParameter("specificIds");
-
             if (StringUtil.isDefined(specificId)) {
               jobDomainSC.importUser(specificId);
             }
           }
         } else if (function.equals("userImportAll")) {
           Iterator<UserDetail> usersIt = jobDomainSC.getUsersToImport().iterator();
-          ArrayList<String> listSelectedUsersIds = new ArrayList<>();
+          List<String> listSelectedUsersIds = new ArrayList<>();
           while (usersIt.hasNext()) {
             listSelectedUsersIds.add(usersIt.next().getSpecificId());
           }
@@ -269,17 +273,16 @@ public class JobDomainPeasRequestRouter extends
 
           destination = "userView.jsp";
         } else if (function.startsWith("userSynchro")) {
-          jobDomainSC.synchroUser(request.getParameter("Iduser"));
+          jobDomainSC.synchroUser(userId);
         } else if (function.startsWith("userUnSynchro")) {
-          jobDomainSC.unsynchroUser(request.getParameter("Iduser"));
+          jobDomainSC.unsynchroUser(userId);
         } else if (function.equals("userOpen")) {
-          String userId = request.getParameter("userId");
+          userId = request.getParameter("userId");
 
-          OrganizationController orgaController = jobDomainSC.getOrganisationController();
-          UserDetail user = orgaController.getUserDetail(userId);
+          UserDetail user = UserDetail.getById(userId);
           String domainId = user.getDomainId();
           if (domainId == null) {
-            domainId = "-1";
+            domainId = Domain.MIXED_DOMAIN_ID;
           }
 
           // not refresh the domain
@@ -296,13 +299,13 @@ public class JobDomainPeasRequestRouter extends
           String[] groupIds = adminController.getDirectGroupsIdsOfUser(userId);
           if (groupIds != null && groupIds.length > 0) {
             for (final String groupId : groupIds) {
-              Group group = orgaController.getGroup(groupId);
+              Group group = Group.getById(groupId);
 
               String groupDomainId = group.getDomainId();
               if (groupDomainId == null) {
-                groupDomainId = "-1";
+                groupDomainId = Domain.MIXED_DOMAIN_ID;
               }
-              if (!groupDomainId.equals("-1")) {
+              if (!groupDomainId.equals(Domain.MIXED_DOMAIN_ID)) {
                 jobDomainSC.goIntoGroup(group.getId());
                 break;
               }
@@ -319,8 +322,8 @@ public class JobDomainPeasRequestRouter extends
             destination = getDestination("groupContent", jobDomainSC, request);
           }
         }
-      } // GROUP Actions --------------------------------------------
-      else if (function.startsWith("group")) {
+      } else if (function.startsWith("group")) {
+        // GROUP Actions --------------------------------------------
         boolean bHaveToRefreshDomain = false;
 
         jobDomainSC.setTargetUser(null);
@@ -343,8 +346,8 @@ public class JobDomainPeasRequestRouter extends
         } else if (function.startsWith("groupSet")) {
           jobDomainSC.returnIntoGroup(null);
           jobDomainSC.goIntoGroup(request.getParameter("Idgroup"));
-        } // Operation functions
-        else if (function.startsWith("groupCreate")) {
+        } else if (function.startsWith("groupCreate")) {
+          // Operation functions
           bHaveToRefreshDomain = jobDomainSC.createGroup(request.getParameter("Idparent"),
               WebEncodeHelper.htmlStringToJavaString(request.getParameter("groupName")),
               WebEncodeHelper.htmlStringToJavaString(request.getParameter("groupDescription")),
@@ -378,8 +381,7 @@ public class JobDomainPeasRequestRouter extends
               .splitString(request.getParameter("UserPanelCurrentUserIds"), ',');
           List<String> groupIds = (List<String>) StringUtil
               .splitString(request.getParameter("UserPanelCurrentGroupIds"), ',');
-          jobDomainSC.initUserPanelForGroupManagers((String) request.getAttribute("myComponentURL"),
-              userIds, groupIds);
+          jobDomainSC.initUserPanelForGroupManagers(userIds, groupIds);
           destination = Selection.getSelectionURL();
         } else if (function.equals("groupManagersUpdate")) {
           List<String> userIds = (List<String>) StringUtil
@@ -450,8 +452,8 @@ public class JobDomainPeasRequestRouter extends
         } else {
           if (function.startsWith("domainContent")) {
             jobDomainSC.returnIntoGroup(null);
-          } // Operation functions
-          else if (function.startsWith("domainCreate")) {
+          } else if (function.startsWith("domainCreate")) {
+            // Operation functions
             String newDomainId = jobDomainSC.createDomain(WebEncodeHelper.htmlStringToJavaString(
                 request
                 .getParameter("domainName")),
@@ -748,6 +750,7 @@ public class JobDomainPeasRequestRouter extends
               isUserInAtLeastOneGroupManageableByCurrentUser());
         }
         request.setAttribute("userObject", jobDomainSC.getTargetUserFull());
+        request.setAttribute("Index", jobDomainSC.getIndex());
       } else if (destination.equals("domainNavigation.jsp")) {
         List<Domain> domains = jobDomainSC.getAllDomains();
         if (domains.size() == 1) {
@@ -820,7 +823,8 @@ public class JobDomainPeasRequestRouter extends
     while (parameters.hasMoreElements()) {
       String parameterName = parameters.nextElement();
       if (parameterName.startsWith("prop_")) {
-        String property = parameterName.substring(5, parameterName.length()); // remove "prop_"
+        // remove "prop_"
+        String property = parameterName.substring(5, parameterName.length());
         properties.put(property, request.getParameter(parameterName));
       }
     }
