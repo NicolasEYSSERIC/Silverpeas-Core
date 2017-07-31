@@ -1794,13 +1794,13 @@ public class Admin {
       if (useProfileInheritance) {
         space = spaceManager.getSpaceInstById(domainDriverManager, shortSpaceId);
 
-        // inherited rights must be removed but local rights are preserved
-        List<SpaceProfileInst> inheritedProfiles = space.getInheritedProfiles();
-        for (SpaceProfileInst profile : inheritedProfiles) {
-          deleteSpaceProfileInst(profile.getId(), false);
-        }
-
-        if (!moveOnTop) {
+        if (moveOnTop) {
+          // inherited rights must be removed but local rights are preserved
+          List<SpaceProfileInst> inheritedProfiles = space.getInheritedProfiles();
+          for (SpaceProfileInst profile : inheritedProfiles) {
+            deleteSpaceProfileInst(profile.getId(), false);
+          }
+        } else {
           if (!space.isInheritanceBlocked()) {
             // space inherits rights from parent
             SpaceInst father = getSpaceInstById(shortFatherId);

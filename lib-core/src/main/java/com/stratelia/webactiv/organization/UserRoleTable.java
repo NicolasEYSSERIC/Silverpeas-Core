@@ -451,13 +451,6 @@ public class UserRoleTable extends Table<UserRoleRow> {
    * @throws AdminPersistenceException
    */
   public void removeGroupFromUserRole(int groupId, int userRoleId) throws AdminPersistenceException {
-    if (!isGroupDirectlyInRole(groupId, userRoleId)) {
-      throw new AdminPersistenceException("UserRoleTable.removeGroupFromUserRole",
-          SilverpeasException.ERROR,
-          "admin.EX_ERR_GROUP_NOT_IN_USERROLE",
-          "userrole id: '" + userRoleId + "', group id: '" + groupId + "'");
-    }
-
     int[] params = new int[] { userRoleId, groupId };
     SynchroReport.debug("UserRoleTable.removeGroupFromUserRole()",
         "Retrait du groupe d'ID " + groupId + " du role d'ID " + userRoleId
