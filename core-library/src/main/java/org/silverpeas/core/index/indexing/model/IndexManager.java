@@ -58,11 +58,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import static org.silverpeas.core.i18n.I18NHelper.defaultLocale;
 import static org.silverpeas.core.index.indexing.model.IndexProcessor.doRemoveAll;
 import static org.silverpeas.core.index.indexing.model.IndexProcessor.doFlush;
 
@@ -455,34 +453,42 @@ public class IndexManager {
         ATTACHMENT_PREFIX)) {
       String lang = indexEntry.getLang();
       if (indexEntry.getTitle(lang) != null) {
-        doc.add(new Field(getFieldName(CONTENT, lang), indexEntry.getTitle(lang),
-            TextField.TYPE_NOT_STORED));
+        addTitleToDocContent(indexEntry.getTitle(lang), doc, lang);
       }
-      doc.add(new Field(getFieldName(CONTENT, lang), indexEntry.getFilename(),
-          TextField.TYPE_NOT_STORED));
-      doc.add(new Field(getFieldName(CONTENT, lang), indexEntry.getFilename(),
-          TextField.TYPE_NOT_STORED));
+      addTitleToDocContent(indexEntry.getFilename(), doc, lang);
     } else {
-      doc.add(new Field(CONTENT, indexEntry.getTitle().toLowerCase(defaultLocale),
-          TextField.TYPE_NOT_STORED));
+      addTitleToDocContent(indexEntry.getTitle(), doc);
     }
     languages = indexEntry.getLanguages();
     while (languages.hasNext()) {
       String language = languages.next();
-
       if (indexEntry.getTitle(language) != null) {
-        doc.add(new Field(getFieldName(CONTENT, language), indexEntry.getTitle(language),
-            TextField.TYPE_NOT_STORED));
+        addTitleToDocContent(indexEntry.getTitle(language), doc, language);
       }
       if (indexEntry.getPreview(language) != null) {
-        doc.add(new Field(getFieldName(CONTENT, language), indexEntry.getPreview(language).
-            toLowerCase(new Locale(language)), TextField.TYPE_NOT_STORED));
+        doc.add(new Field(getFieldName(CONTENT, language), indexEntry.getPreview(language),
+            TextField.TYPE_NOT_STORED));
       }
       if (indexEntry.getKeywords(language) != null) {
-        doc.add(new Field(getFieldName(CONTENT, language), indexEntry.getKeywords(language).
-            toLowerCase(new Locale(language)), TextField.TYPE_NOT_STORED));
+        doc.add(new Field(getFieldName(CONTENT, language), indexEntry.getKeywords(language),
+            TextField.TYPE_NOT_STORED));
       }
     }
+  }
+
+  private void addTitleToDocContent(String title, Document doc) {
+    addTitleToDocContent(CONTENT, title, doc);
+  }
+
+  private void addTitleToDocContent(String title, Document doc, String lang) {
+    String fieldName = getFieldName(CONTENT, lang);
+    addTitleToDocContent(fieldName, title, doc);
+  }
+
+  private void addTitleToDocContent(String fieldName, String title, Document doc) {
+    doc.add(new Field(fieldName, title, TextField.TYPE_NOT_STORED));
+    doc.add(new Field(fieldName, title.replaceAll("_", " ").replaceAll("-", " "),
+        TextField.TYPE_NOT_STORED));
   }
 
   private void setHeaderFields(final FullIndexEntry indexEntry, final Document doc) {
@@ -495,17 +501,13 @@ public class IndexManager {
       }
       doc.add(new Field(getFieldName(HEADER, lang), indexEntry.getFilename(),
           TextField.TYPE_NOT_STORED));
-      doc.add(new Field(getFieldName(HEADER, lang), indexEntry.getFilename(),
-          TextField.TYPE_NOT_STORED));
     } else {
       Iterator<String> languages = indexEntry.getLanguages();
       while (languages.hasNext()) {
         String language = languages.next();
         if (indexEntry.getTitle(language) != null) {
-          doc.add(new Field(getFieldName(HEADER, language), indexEntry.getTitle(language).
-              toLowerCase(new Locale(language)), TextField.TYPE_NOT_STORED));
-          doc.add(new Field(getFieldName(HEADER, language), indexEntry.getTitle(language).
-              toLowerCase(new Locale(language)), TextField.TYPE_NOT_STORED));
+          doc.add(new Field(getFieldName(HEADER, language), indexEntry.getTitle(language),
+              TextField.TYPE_NOT_STORED));
         }
       }
     }
@@ -513,12 +515,12 @@ public class IndexManager {
     while (languages.hasNext()) {
       String language = languages.next();
       if (indexEntry.getPreview(language) != null) {
-        doc.add(new Field(getFieldName(HEADER, language), indexEntry.getPreview(language).
-            toLowerCase(new Locale(language)), TextField.TYPE_NOT_STORED));
+        doc.add(new Field(getFieldName(HEADER, language), indexEntry.getPreview(language),
+            TextField.TYPE_NOT_STORED));
       }
       if (indexEntry.getKeywords(language) != null) {
-        doc.add(new Field(getFieldName(HEADER, language), indexEntry.getKeywords(language).
-            toLowerCase(new Locale(language)), TextField.TYPE_NOT_STORED));
+        doc.add(new Field(getFieldName(HEADER, language), indexEntry.getKeywords(language),
+            TextField.TYPE_NOT_STORED));
       }
     }
   }
