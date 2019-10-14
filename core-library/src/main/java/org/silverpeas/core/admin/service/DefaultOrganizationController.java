@@ -981,41 +981,27 @@ public class DefaultOrganizationController implements OrganizationController {
   @Override
   public List<String> getSearchableComponentsByCriteria(ComponentSearchCriteria criteria) {
     final List<String> componentIds;
+    String userId = criteria.getUser().getId();
     if (criteria.hasCriterionOnWorkspace()) {
       if (criteria.hasCriterionOnComponentInstances()) {
         componentIds = new ArrayList<>();
         componentIds.addAll(criteria.getComponentInstanceIds());
       } else {
-        String[] availableComponentIds = getAvailCompoIds(criteria.getWorkspaceId(),
-            criteria.getUser().getId());
-        componentIds = Stream.of(availableComponentIds)
-            .filter(c -> isSearchable(c, null))
-            .collect(Collectors.toList());
+        String[] availableComponentIds = getAvailCompoIds(criteria.getWorkspaceId(), userId);
+        componentIds = extractSearchableComponents(availableComponentIds, userId);
       }
     } else {
-      String[] availableComponentIds = getAvailCompoIds(criteria.getUser().getId());
-      List<String> excludedComponentIds = getComponentsExcludedFromGlobalSearch(
-          criteria.getUser().getId());
-      componentIds = Stream.of(availableComponentIds)
-          .filter(c -> isSearchable(c, excludedComponentIds))
-          .collect(Collectors.toList());
+      String[] availableComponentIds = getAvailCompoIds(userId);
+      componentIds = extractSearchableComponents(availableComponentIds, userId);
     }
     return componentIds;
   }
 
-  private boolean isSearchable(String componentId, List<String> exclusionList) {
-    if (exclusionList != null && !exclusionList.isEmpty() && exclusionList.contains(componentId)) {
-      return false;
-    }
-    if (componentId.startsWith("silverCrawler")
-        || componentId.startsWith("gallery")
-        || componentId.startsWith("kmelia")) {
-      boolean isPrivateSearch = "yes".equalsIgnoreCase(
-          getComponentParameterValue(componentId, "privateSearch"));
-      return !isPrivateSearch;
-    } else {
-      return true;
-    }
+  private List<String> extractSearchableComponents(String[] availableComponentIds, String userId) {
+    List<String> excludedComponentIds = getComponentsExcludedFromGlobalSearch(userId);
+    return Stream.of(availableComponentIds)
+        .filter(c -> !excludedComponentIds.contains(c))
+        .collect(Collectors.toList());
   }
 
   private List<String> getComponentsExcludedFromGlobalSearch(String userId) {
@@ -1032,6 +1018,13 @@ public class DefaultOrganizationController implements OrganizationController {
     List<String> components =
         getItemsExcludedFromGlobalSearch("ComponentsExcludedFromGlobalSearch");
     excluded.addAll(components);
+
+    // exclude components (from instance parameter 'privateSearch')
+    List<ComponentInstLight> componentsWithPrivateSearch =
+        getAdminService().getComponentsWithParameter("privateSearch", "yes");
+    for (ComponentInstLight component : componentsWithPrivateSearch) {
+      excluded.add(component.getId());
+    }
 
     return excluded;
   }
