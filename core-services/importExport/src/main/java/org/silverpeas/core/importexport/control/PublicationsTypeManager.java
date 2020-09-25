@@ -298,7 +298,7 @@ public class PublicationsTypeManager {
                 .warn("Cannot write WYSIWYG content: {0}", e.getMessage());
           }
 
-        } else if (value.startsWith("image")) {
+        } else if (value.startsWith("image_") || value.startsWith("file_")) {
           String imageId = value.substring(value.indexOf('_') + 1, value.length());
           SimpleDocument attachment = null;
           try {
@@ -306,34 +306,17 @@ public class PublicationsTypeManager {
                 .searchDocumentById(new SimpleDocumentPK(imageId, publicationPk.getInstanceId()),
                     null);
           } catch (RuntimeException e1) {
-            SilverLogger.getLogger(this).silent(e1).warn("Cannot get image: {0}", e1.getMessage());
+            SilverLogger.getLogger(this).silent(e1).warn("Cannot get file: {0}", e1.getMessage());
           }
 
           if (attachment != null) {
-            String fromPath = attachment.getAttachmentPath();
-
             try {
+              String fromPath = attachment.getAttachmentPath();
               FileRepositoryManager
                   .copyFile(fromPath, exportPublicationPath + separator + attachment.getFilename());
             } catch (Exception e) {
               SilverLogger.getLogger(this).silent(e).warn("Cannot write file: {0}", e.getMessage());
             }
-            xmlField.setValue(exportPublicationRelativePath + separator + attachment.getFilename());
-          }
-        } else if (value.startsWith("file")) {
-          String fileId = value.substring(value.indexOf('_') + 1, value.length());
-
-          SimpleDocument attachment = null;
-          try {
-            attachment = AttachmentServiceProvider.getAttachmentService()
-                .searchDocumentById(new SimpleDocumentPK(fileId, publicationPk.getInstanceId()),
-                    null);
-          } catch (RuntimeException e1) {
-            SilverLogger.getLogger(this)
-                .silent(e1)
-                .warn("Cannot get attachment: {0}", e1.getMessage());
-          }
-          if (attachment != null) {
             xmlField.setValue(exportPublicationRelativePath + separator + attachment.getFilename());
           }
         }

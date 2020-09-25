@@ -792,23 +792,27 @@ public abstract class GEDImportExport extends ComponentImportExport {
       PublicationDetail publicationDetail = pubComplete.getPublicationDetail();
 
       PublicationContentType pubContent = null;
-      if (!StringUtil.isInteger(publicationDetail.getInfoId())) {
-        // la publication a un contenu de type XMLTemplate (formTemplate)
-        pubContent = new PublicationContentType();
-        List<XMLField> xmlFields = getFormTemplateService().getXMLFieldsForExport(publicationDetail.
-            getPK().getInstanceId() + ":" + publicationDetail.getInfoId(), pubId);
+      try {
+        if (!StringUtil.isInteger(publicationDetail.getInfoId())) {
+          // la publication a un contenu de type XMLTemplate (formTemplate)
+          pubContent = new PublicationContentType();
+          List<XMLField> xmlFields = getFormTemplateService().getXMLFieldsForExport(publicationDetail.
+              getPK().getInstanceId() + ":" + publicationDetail.getInfoId(), pubId);
 
-        XMLModelContentType xmlModel = new XMLModelContentType(publicationDetail.getInfoId());
-        xmlModel.setFields(xmlFields);
-        pubContent.setXMLModelContentType(xmlModel);
-      } else if (WysiwygController.haveGotWysiwyg(publicationDetail.getPK().getInstanceId(), pubId,
-          I18NHelper.checkLanguage(publicationDetail.getLanguage()))) {
-        pubContent = new PublicationContentType();
-        WysiwygContentType wysiwygContentType = new WysiwygContentType();
-        String wysiwygFileName = WysiwygController
-            .getWysiwygFileName(pubId, I18NHelper.checkLanguage(publicationDetail.getLanguage()));
-        wysiwygContentType.setPath(wysiwygFileName);
-        pubContent.setWysiwygContentType(wysiwygContentType);
+          XMLModelContentType xmlModel = new XMLModelContentType(publicationDetail.getInfoId());
+          xmlModel.setFields(xmlFields);
+          pubContent.setXMLModelContentType(xmlModel);
+        } else if (WysiwygController
+            .haveGotWysiwyg(publicationDetail.getPK().getInstanceId(), pubId, I18NHelper.checkLanguage(publicationDetail.getLanguage()))) {
+          pubContent = new PublicationContentType();
+          WysiwygContentType wysiwygContentType = new WysiwygContentType();
+          String wysiwygFileName = WysiwygController
+              .getWysiwygFileName(pubId, I18NHelper.checkLanguage(publicationDetail.getLanguage()));
+          wysiwygContentType.setPath(wysiwygFileName);
+          pubContent.setWysiwygContentType(wysiwygContentType);
+        }
+      } catch (Exception e) {
+        SilverLogger.getLogger(this).error("Can't export content of publication #"+pubId);
       }
       publicationType.setPublicationContentType(pubContent);
       publicationType.setPublicationDetail(publicationDetail);

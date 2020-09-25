@@ -96,9 +96,7 @@ public class ImageFieldDisplayer extends AbstractFileFieldDisplayer {
             attachmentPk, language);
         if (attachment != null) {
           originalOperation = Operation.UPDATE;
-          if (pageContext.getRenderingContext() == RenderingContext.EXPORT) {
-            imageURL = "file:" + attachment.getAttachmentPath();
-          } else if (pageContext.isSharingContext()) {
+          if (pageContext.isSharingContext()) {
             imageURL = pageContext.getSharingContext().getSharedUriOf(attachment).toString();
           } else {
             imageURL = URLUtil.getApplicationURL() + attachment.getAttachmentURL();
@@ -112,7 +110,8 @@ public class ImageFieldDisplayer extends AbstractFileFieldDisplayer {
     if (!template.isHidden()) {
       if (template.isReadOnly()) {
         if (imageURL != null) {
-          displayImage(parameters, imageURL, out, pageContext.isSharingContext());
+          boolean useOriginalDimension = pageContext.isSharingContext() || pageContext.getRenderingContext() == RenderingContext.EXPORT;
+          displayImage(parameters, imageURL, out, useOriginalDimension);
         }
       } else if (!template.isDisabled()) {
 
